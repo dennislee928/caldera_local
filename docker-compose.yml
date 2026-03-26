@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   caldera:
     build:
@@ -8,7 +6,6 @@ services:
       args: 
         TZ: "UTC" #TZ sets timezone for ubuntu setup
         WIN_BUILD: "false" #WIN_BUILD is used to enable windows build in sandcat plugin
-    image: caldera:latest
     ports:
       - "8888:8888"
       - "7010:7010"

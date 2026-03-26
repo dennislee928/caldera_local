@@ -1,11 +1,117 @@
 import argparse
 import asyncio
+import json
 import logging
 import os
 import sys
+import importlib.util
+import importlib.metadata
+import time
 
-import aiohttp_apispec
-from aiohttp import web
+#region agent log
+def _agent_debug_log(run_id, hypothesis_id, location, message, data):
+    payload = {
+        'sessionId': 'fd6a55',
+        'runId': run_id,
+        'hypothesisId': hypothesis_id,
+        'location': location,
+        'message': message,
+        'data': data,
+        'timestamp': int(time.time() * 1000)
+    }
+    try:
+        with open('/Users/dennis_leedennis_lee/caldera/.cursor/debug-fd6a55.log', 'a', encoding='utf-8') as f:
+            f.write(json.dumps(payload, ensure_ascii=True) + '\n')
+    except Exception:
+        pass
+#endregion
+
+#region agent log
+_agent_debug_log(
+    'run1',
+    'H1',
+    'server.py:import-aiohttp_apispec',
+    'Before importing aiohttp_apispec',
+    {
+        'python': sys.version.split(' ')[0],
+        'pathCount': len(sys.path),
+        'inVirtualEnv': sys.prefix != sys.base_prefix
+    }
+)
+_agent_debug_log(
+    'run1',
+    'H3',
+    'server.py:import-aiohttp_apispec',
+    'find_spec for aiohttp_apispec',
+    {
+        'executable': sys.executable,
+        'sysPrefix': sys.prefix,
+        'basePrefix': sys.base_prefix,
+        'specFound': importlib.util.find_spec('aiohttp_apispec') is not None
+    }
+)
+#endregion
+#region agent log
+_agent_debug_log(
+    'run1',
+    'H4',
+    'server.py:python-compatibility',
+    'Python compatibility precheck',
+    {'major': sys.version_info.major, 'minor': sys.version_info.minor}
+)
+#endregion
+try:
+    import aiohttp_apispec
+    #region agent log
+    _agent_debug_log(
+        'run1',
+        'H2',
+        'server.py:import-aiohttp_apispec',
+        'Imported aiohttp_apispec successfully',
+        {}
+    )
+    #endregion
+except Exception as exc:
+    #region agent log
+    dist_ok = False
+    dist_error = None
+    try:
+        importlib.metadata.version('aiohttp-apispec')
+        dist_ok = True
+    except Exception as dist_exc:
+        dist_error = f'{type(dist_exc).__name__}: {dist_exc}'
+    _agent_debug_log(
+        'run1',
+        'H2',
+        'server.py:import-aiohttp_apispec',
+        'Failed to import aiohttp_apispec',
+        {
+            'errorType': type(exc).__name__,
+            'error': str(exc),
+            'distributionInstalled': dist_ok,
+            'distributionError': dist_error
+        }
+    )
+    #endregion
+    aiohttp_apispec = None
+try:
+    from aiohttp import web
+except ModuleNotFoundError as exc:
+    #region agent log
+    _agent_debug_log(
+        'run1',
+        'H6',
+        'server.py:import-aiohttp',
+        'Failed to import aiohttp',
+        {'errorType': type(exc).__name__, 'error': str(exc), 'python': sys.version.split(' ')[0]}
+    )
+    #endregion
+    print(
+        'Missing dependency: aiohttp. '
+        'Please install requirements into a compatible Python virtual environment, '
+        'or run via Docker (recommended on macOS).'
+    )
+    raise
 
 import app.api.v2
 from app import version
@@ -68,6 +174,18 @@ def init_swagger_documentation(app):
     """Makes swagger documentation available at /api/docs for any endpoints
     marked for aiohttp_apispec documentation.
     """
+    if aiohttp_apispec is None:
+        #region agent log
+        _agent_debug_log(
+            'run1',
+            'H5',
+            'server.py:init_swagger_documentation',
+            'aiohttp_apispec not available; skipping swagger setup',
+            {'skipped': True}
+        )
+        #endregion
+        return
+
     aiohttp_apispec.setup_aiohttp_apispec(
         app=app,
         title="CALDERA",

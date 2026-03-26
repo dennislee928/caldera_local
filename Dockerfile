@@ -6,8 +6,23 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
 
 WORKDIR /usr/src/app
 
-RUN apt-get update && \
-    apt-get -y install python3 python3-pip golang git
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Make apt more resilient to transient network timeouts during docker builds
+RUN printf '%s\n' \
+    'Acquire::Retries "8";' \
+    'Acquire::http::Timeout "60";' \
+    'Acquire::https::Timeout "60";' \
+    'Acquire::http::No-Cache "true";' \
+    > /etc/apt/apt.conf.d/80caldera-retries
+
+RUN apt-get update -o Acquire::Retries=8 && \
+    apt-get -y install --no-install-recommends -o Acquire::Retries=8 --fix-missing ca-certificates && \
+    sed -i 's|http://ports.ubuntu.com|https://ports.ubuntu.com|g' /etc/apt/sources.list && \
+    apt-get update -o Acquire::Retries=8 && \
+    apt-get -y install --no-install-recommends -o Acquire::Retries=8 --fix-missing python3 python3-pip git && \
+    apt-get -y install --no-install-recommends -o Acquire::Retries=8 --fix-missing golang && \
+    rm -rf /var/lib/apt/lists/*
 
 #WIN_BUILD is used to enable windows build in sandcat plugin
 ARG WIN_BUILD=false

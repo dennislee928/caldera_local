@@ -20,7 +20,14 @@ RUN apt-get update -o Acquire::Retries=8 && \
     apt-get -y install --no-install-recommends -o Acquire::Retries=8 --fix-missing ca-certificates && \
     sed -i 's|http://ports.ubuntu.com|https://ports.ubuntu.com|g' /etc/apt/sources.list && \
     apt-get update -o Acquire::Retries=8 && \
-    apt-get -y install --no-install-recommends -o Acquire::Retries=8 --fix-missing python3 python3-pip git && \
+    apt-get -y install --no-install-recommends -o Acquire::Retries=8 --fix-missing \
+      python3 python3-pip python3-dev \
+      git \
+      build-essential pkg-config \
+      libffi-dev libssl-dev \
+      zlib1g-dev \
+      libjpeg-dev libfreetype6-dev \
+      libxml2-dev libxslt1-dev && \
     apt-get -y install --no-install-recommends -o Acquire::Retries=8 --fix-missing golang && \
     rm -rf /var/lib/apt/lists/*
 
